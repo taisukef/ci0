@@ -1,4 +1,4 @@
-int main(int param) {
+int main() {
     int sum = 0;
     int n = 1;
     while (n <= 10) { 
@@ -6,5 +6,5 @@ int main(int param) {
         n = n + 1;
     }
     putnum(sum);
-    return param;
+    return 0;
 }

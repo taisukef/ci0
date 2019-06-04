@@ -1,4 +1,4 @@
-int main(int param) {
+int main() {
     println("Hello World!");
     return 0;
 }

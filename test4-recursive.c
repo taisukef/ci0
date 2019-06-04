@@ -12,4 +12,5 @@ int main(int param) {
         putnum(fib(i));
         i = i + 1;
     }
+    return 0;
 }
