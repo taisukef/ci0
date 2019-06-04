@@ -1,10 +1,15 @@
 # ci0
 
+C compiler in 512 lines.  
 512行のCコンパイラ  
+
+I editted "Mini C Interpreter" by Minoru Hatada for Mac.  
 Minoru Hatada 氏の「ミニCインタプリタ」をMacで動くように修正  
+
 http://home.a00.itscom.net/hatada/lp/ci/minicinterpreter00.html  
 http://home.a00.itscom.net/hatada/_toc/index.html  
 
+For learners about the compiler!  
 コンパイラの学習にオススメです！  
 
 # build
