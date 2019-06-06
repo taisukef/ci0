@@ -15,10 +15,10 @@ For learners about the compiler!
 # build
 
 for Mac  
-gcc cl0.c -o cl0  
+gcc ci0.c -o ci0
 
 for Windows  
-cl cl0.c  
+cl ci0.c
 
 # usage
 
