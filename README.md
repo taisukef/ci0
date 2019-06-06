@@ -14,7 +14,7 @@ For learners about the compiler!
 
 # build
 
-for Mac  
+for Mac & Ubuntu
 gcc ci0.c -o ci0
 
 for Windows  

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 //----------------------------------------------------------------------------//
 //                               字句解析                                      //
 #define SIZETOKEN      1000    // トークン配列のサイズ
