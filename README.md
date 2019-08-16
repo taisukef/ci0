@@ -16,6 +16,9 @@ https://fukuno.jig.jp/app/wasm/ci0/
 For learners about the compiler!  
 コンパイラの学習にオススメです！  
 
+blog  
+http://fukuno.jig.jp/2581  
+
 # build
 
 for Mac  
