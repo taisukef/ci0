@@ -1,0 +1,72 @@
+; ModuleID = 'wasm/wasm-main.c'
+source_filename = "wasm/wasm-main.c"
+target datalayout = "e-m:e-p:32:32-i64:64-n32:64-S128"
+target triple = "wasm32"
+
+@srcfile = hidden global [10240 x i8] zeroinitializer, align 16
+@.str = private unnamed_addr constant [46 x i8] c"int main() { putnum(3 + 5 * 20); return 15; }\00", align 1
+@.str.1 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@.str.2 = private unnamed_addr constant [7 x i8] c"test.c\00", align 1
+@test.PARAM = private unnamed_addr constant [2 x i8*] [i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str.1, i32 0, i32 0), i8* getelementptr inbounds ([7 x i8], [7 x i8]* @.str.2, i32 0, i32 0)], align 4
+@.str.3 = private unnamed_addr constant [11 x i8] c"result: %d\00", align 1
+@fToken = external global i32, align 4
+@fCode = external global i32, align 4
+@fTrace = external global i32, align 4
+
+; Function Attrs: noinline nounwind
+define hidden void @test() #0 {
+entry:
+  %PARAM = alloca [2 x i8*], align 4
+  %res = alloca i32, align 4
+  %call = call i8* @strcpy(i8* getelementptr inbounds ([10240 x i8], [10240 x i8]* @srcfile, i32 0, i32 0), i8* getelementptr inbounds ([46 x i8], [46 x i8]* @.str, i32 0, i32 0))
+  %0 = bitcast [2 x i8*]* %PARAM to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i32(i8* %0, i8* bitcast ([2 x i8*]* @test.PARAM to i8*), i32 8, i32 4, i1 false)
+  store i32 0, i32* %res, align 4
+  %arraydecay = getelementptr inbounds [2 x i8*], [2 x i8*]* %PARAM, i32 0, i32 0
+  %call1 = call i32 @main(i32 8, i8** %arraydecay)
+  store i32 %call1, i32* %res, align 4
+  %1 = load i32, i32* %res, align 4
+  %call2 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([11 x i8], [11 x i8]* @.str.3, i32 0, i32 0), i32 %1)
+  ret void
+}
+
+declare i8* @strcpy(i8*, i8*) #1
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i32(i8* nocapture writeonly, i8* nocapture readonly, i32, i32, i1) #2
+
+declare i32 @main(i32, i8**) #1
+
+declare i32 @printf(i8*, ...) #1
+
+; Function Attrs: noinline nounwind
+define hidden void @setFlagTokenCodeTrace(i32 %n, i32 %m, i32 %l) #0 {
+entry:
+  %n.addr = alloca i32, align 4
+  %m.addr = alloca i32, align 4
+  %l.addr = alloca i32, align 4
+  store i32 %n, i32* %n.addr, align 4
+  store i32 %m, i32* %m.addr, align 4
+  store i32 %l, i32* %l.addr, align 4
+  %0 = load i32, i32* %n.addr, align 4
+  store i32 %0, i32* @fToken, align 4
+  %1 = load i32, i32* %m.addr, align 4
+  store i32 %1, i32* @fCode, align 4
+  %2 = load i32, i32* %l.addr, align 4
+  store i32 %2, i32* @fTrace, align 4
+  ret void
+}
+
+; Function Attrs: noinline nounwind
+define hidden i8* @getIndexOfSource() #0 {
+entry:
+  ret i8* getelementptr inbounds ([10240 x i8], [10240 x i8]* @srcfile, i32 0, i32 0)
+}
+
+attributes #0 = { noinline nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="generic" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="generic" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { argmemonly nounwind }
+
+!llvm.ident = !{!0}
+
+!0 = !{!"clang version 5.0.0 (http://llvm.org/git/clang.git 01734df77696b4d9ba1debc1823b29673cae6a6c) (http://llvm.org/git/llvm.git c67ef6aaf75865024462576a5b790e46ccc2e75e)"}

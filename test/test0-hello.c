@@ -1,4 +1,4 @@
 int main() {
-    println("Hello World!");
+    putstr("Hello World!");
     return 0;
 }

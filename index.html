@@ -1,0 +1,192 @@
+<html>
+<head>
+<meta charset='utf-8'/>
+<title>webci0 - mini C compiler ci0 in WebAssembly</title>
+<meta property="og:image" content="webci0.png">
+<link rel="apple-touch-icon" href="webci0.png"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+
+<script src="lib/ace.js"></script>
+<script>"use strict"
+
+const samplesrc = 
+`int fib(int n) {
+  if (n < 2)
+    return n;
+  return fib(n - 1) + fib(n - 2);
+}
+int main(int param) {
+  int i = 0;
+  if (param == 0)
+    param = 5;
+  while (i <= param) {
+    putnum(fib(i));
+    i = i + 1;
+  }
+  return fib(param);
+}`
+
+window.onload = function() {
+	const editor = ace.edit("editor")
+    editor.setTheme("ace/theme/tomorrow_night_bright");
+    editor.setFontSize(13);
+    editor.getSession().setMode("ace/mode/c_cpp");
+    editor.getSession().setUseWrapMode(true);
+	editor.getSession().setTabSize(2);
+	editor.commands.addCommand({
+	  name: "RUN", bindKey: { win : "F5", mac : "F5" }, exec: function(editor) { run() }
+	})
+	editor.getSession().on("change", function() {
+		localStorage.setItem('text', editor.getValue())
+	})
+	const v = localStorage.getItem("text")
+	if (v)
+		editor.setValue(v, -1)
+	else
+		editor.setValue(samplesrc, -1)
+	editor.focus()
+	/*
+	editor.commands.addCommand({
+	  name: "SAVE", bindKey: { win : "Ctrl-S", mac : "Command-S" }, exec: function(editor) { run() }
+	})
+	*/
+	const output = ace.edit("output")
+	output.setReadOnly(true)
+	/*
+	output.setOptions({
+	    maxLines: 10,
+	    autoScrollEditorIntoView: true,
+	    showPrintMargin: false
+	})
+	*/
+	const consoleout = function(s) {
+		const doc = output.getSession().getDocument()
+		const len = doc.getLength()
+		output.setValue(output.getValue() + s)
+//		doc.insert(len, s)
+		
+		output.gotoLine(len, 0, true)
+	}
+	let ex
+	let mem
+	let idxsrc
+	let importObject = {
+			  env: {
+			      console_log: function(p) {
+					  	let s = ""
+						for (;;) {
+							const c = mem[p]
+							if (c == 0)
+								break;
+							s += String.fromCharCode(c)
+							p++
+						}
+						console.log(s)
+						consoleout(s)
+				  },
+				  exit: function(n) {
+					  console.log("exit: " + n)
+					  throw n
+				  }
+			  }
+			}
+	
+	const run = function() {
+		output.setValue("")
+
+		ex.cfreeall()
+		const f = function(b) {
+			return b ? 1 : 0
+		}
+		ex.setFlagTokenCodeTrace(f(flgtoken.checked), f(flgcode.checked), f(flgtrace.checked))
+		const src = editor.getValue()
+		for (let i = 0; i < src.length; i++) {
+			mem[idxsrc + i] = src.charCodeAt(i)
+		}
+		mem[idxsrc + src.length] = 0
+
+		if (ex.lex("dummy.c"))
+			return
+		if (ex.parser())
+			return
+		let p = parseInt(param.value)
+		if (!p)
+			p = 0
+		const res = ex.execute(p)
+		//alert(res)
+		consoleout("return value: " + res)
+
+	}
+
+	fetch('ci0.wasm')
+		.then(response => response.arrayBuffer())
+		.then(buffer => new Uint8Array(buffer))
+		.then(bytes => WebAssembly.instantiate(bytes, importObject))
+		.then(result => {
+			ex = result.instance.exports
+			mem = new Uint8Array(ex.memory.buffer)
+			idxsrc = ex.getIndexOfSource()
+//			console.log("exec: " + ex.test())
+
+			btn.onclick = run
+			btncls.onclick = function() {
+				output.setValue("")
+			}
+		})
+};
+
+</script>
+<style>
+body {
+	margin: 0;
+	font-family: sans-serif;
+}
+a {
+	color: gray !important;
+}
+#editor {
+	width: 100%;
+	height: 50vh;
+}
+#output {
+	width: 100%;
+	height: 30vh;
+}
+#param {
+	margin-left: .5vw;
+}
+h1 {
+	padding: .6vh;
+	margin: 0;
+	font-size: 3vw;
+}
+button {
+	margin: 3px;
+	padding: 4px;
+	font-size: 1.5vh;
+}
+#credit {
+	padding: .3vh;
+	font-size: 1.5vw;
+}
+</style>
+</head>
+<body>
+<h1>webci0 - mini C compiler ci0 in WebAssembly</h1>
+<div id=editor></div>
+<input type=text id=param placeholder="Param (default:0)">
+<button id=btn>COMPILE &amp; RUN</button>
+<button id=btncls>CLS</button>
+<label><input type=checkbox id=flgtoken>TOKEN</label>
+<label><input type=checkbox id=flgcode>CODE</label>
+<label><input type=checkbox id=flgtrace>TRACE</label>
+<div id=output></div>
+
+<div id="credit">
+API: <a href=http://home.a00.itscom.net/hatada/lp/ci/minicinterpreter00.html>ミニCインタプリタ</a>, <a href=https://webassembly.org/>WebAssembly / wasm</a>, <a href=https://ace.c9.io>Ace - code editor</a><br>
+APP: <a href="https://fukuno.jig.jp/2581">CC BY fukuno.jig.jp</a> (<a href=https://github.com/taisukef/ci0>src on GitHub</a>)<br>
+</div>
+
+</body>
+</html>

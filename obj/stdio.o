@@ -1,0 +1,197 @@
+; ModuleID = 'wasm/stdio.c'
+source_filename = "wasm/stdio.c"
+target datalayout = "e-m:e-p:32:32-i64:64-n32:64-S128"
+target triple = "wasm32"
+
+%struct.FILEDef = type { i8* }
+
+@srcfile = external constant [0 x i8], align 1
+@fstderr = hidden global %struct.FILEDef zeroinitializer, align 4
+@stderr = hidden global %struct.FILEDef* @fstderr, align 4
+@fstdout = hidden global %struct.FILEDef zeroinitializer, align 4
+@stdout = hidden global %struct.FILEDef* @fstdout, align 4
+@fstdin = hidden global %struct.FILEDef zeroinitializer, align 4
+@stdin = hidden global %struct.FILEDef* @fstdin, align 4
+
+; Function Attrs: noinline nounwind
+define hidden i32 @fprintf(%struct.FILEDef* %fp, i8* %fmt, ...) #0 {
+entry:
+  %fp.addr = alloca %struct.FILEDef*, align 4
+  %fmt.addr = alloca i8*, align 4
+  %ap = alloca i8*, align 4
+  %buf = alloca [1024 x i8], align 16
+  %p = alloca i8*, align 4
+  store %struct.FILEDef* %fp, %struct.FILEDef** %fp.addr, align 4
+  store i8* %fmt, i8** %fmt.addr, align 4
+  %ap1 = bitcast i8** %ap to i8*
+  call void @llvm.va_start(i8* %ap1)
+  %arraydecay = getelementptr inbounds [1024 x i8], [1024 x i8]* %buf, i32 0, i32 0
+  store i8* %arraydecay, i8** %p, align 4
+  %0 = load i8*, i8** %fmt.addr, align 4
+  %1 = load i8*, i8** %ap, align 4
+  call void @myvprintf(i8** %p, i8* %0, i8* %1)
+  %ap2 = bitcast i8** %ap to i8*
+  call void @llvm.va_end(i8* %ap2)
+  %2 = load i8*, i8** %p, align 4
+  store i8 0, i8* %2, align 1
+  %arraydecay3 = getelementptr inbounds [1024 x i8], [1024 x i8]* %buf, i32 0, i32 0
+  call void @console_log(i8* %arraydecay3)
+  ret i32 0
+}
+
+; Function Attrs: nounwind
+declare void @llvm.va_start(i8*) #1
+
+declare void @myvprintf(i8**, i8*, i8*) #2
+
+; Function Attrs: nounwind
+declare void @llvm.va_end(i8*) #1
+
+declare void @console_log(i8*) #2
+
+; Function Attrs: noinline nounwind
+define hidden i32 @printf(i8* %fmt, ...) #0 {
+entry:
+  %fmt.addr = alloca i8*, align 4
+  %ap = alloca i8*, align 4
+  %buf = alloca [1024 x i8], align 16
+  %p = alloca i8*, align 4
+  store i8* %fmt, i8** %fmt.addr, align 4
+  %ap1 = bitcast i8** %ap to i8*
+  call void @llvm.va_start(i8* %ap1)
+  %arraydecay = getelementptr inbounds [1024 x i8], [1024 x i8]* %buf, i32 0, i32 0
+  store i8* %arraydecay, i8** %p, align 4
+  %0 = load i8*, i8** %fmt.addr, align 4
+  %1 = load i8*, i8** %ap, align 4
+  call void @myvprintf(i8** %p, i8* %0, i8* %1)
+  %ap2 = bitcast i8** %ap to i8*
+  call void @llvm.va_end(i8* %ap2)
+  %2 = load i8*, i8** %p, align 4
+  store i8 0, i8* %2, align 1
+  %arraydecay3 = getelementptr inbounds [1024 x i8], [1024 x i8]* %buf, i32 0, i32 0
+  call void @console_log(i8* %arraydecay3)
+  ret i32 0
+}
+
+; Function Attrs: noinline nounwind
+define hidden %struct.FILEDef* @fopen(i8* %fn, i8* %mode) #0 {
+entry:
+  %fn.addr = alloca i8*, align 4
+  %mode.addr = alloca i8*, align 4
+  %fp = alloca %struct.FILEDef*, align 4
+  store i8* %fn, i8** %fn.addr, align 4
+  store i8* %mode, i8** %mode.addr, align 4
+  %call = call i8* @calloc(i32 4, i32 1)
+  %0 = bitcast i8* %call to %struct.FILEDef*
+  store %struct.FILEDef* %0, %struct.FILEDef** %fp, align 4
+  %1 = load %struct.FILEDef*, %struct.FILEDef** %fp, align 4
+  %p = getelementptr inbounds %struct.FILEDef, %struct.FILEDef* %1, i32 0, i32 0
+  store i8* getelementptr inbounds ([0 x i8], [0 x i8]* @srcfile, i32 0, i32 0), i8** %p, align 4
+  %2 = load %struct.FILEDef*, %struct.FILEDef** %fp, align 4
+  ret %struct.FILEDef* %2
+}
+
+declare i8* @calloc(i32, i32) #2
+
+; Function Attrs: noinline nounwind
+define hidden void @fclose(%struct.FILEDef* %fp) #0 {
+entry:
+  %fp.addr = alloca %struct.FILEDef*, align 4
+  store %struct.FILEDef* %fp, %struct.FILEDef** %fp.addr, align 4
+  ret void
+}
+
+; Function Attrs: noinline nounwind
+define hidden i32 @fputs(i8* %s, %struct.FILEDef* %fp) #0 {
+entry:
+  %s.addr = alloca i8*, align 4
+  %fp.addr = alloca %struct.FILEDef*, align 4
+  store i8* %s, i8** %s.addr, align 4
+  store %struct.FILEDef* %fp, %struct.FILEDef** %fp.addr, align 4
+  ret i32 0
+}
+
+; Function Attrs: noinline nounwind
+define hidden i8* @fgets(i8* %buf, i32 %len, %struct.FILEDef* %fp) #0 {
+entry:
+  %retval = alloca i8*, align 4
+  %buf.addr = alloca i8*, align 4
+  %len.addr = alloca i32, align 4
+  %fp.addr = alloca %struct.FILEDef*, align 4
+  %i = alloca i32, align 4
+  store i8* %buf, i8** %buf.addr, align 4
+  store i32 %len, i32* %len.addr, align 4
+  store %struct.FILEDef* %fp, %struct.FILEDef** %fp.addr, align 4
+  %0 = load %struct.FILEDef*, %struct.FILEDef** %fp.addr, align 4
+  %p = getelementptr inbounds %struct.FILEDef, %struct.FILEDef* %0, i32 0, i32 0
+  %1 = load i8*, i8** %p, align 4
+  %2 = load i8, i8* %1, align 1
+  %tobool = icmp ne i8 %2, 0
+  br i1 %tobool, label %if.end, label %if.then
+
+if.then:                                          ; preds = %entry
+  store i8* null, i8** %retval, align 4
+  br label %return
+
+if.end:                                           ; preds = %entry
+  store i32 0, i32* %i, align 4
+  store i32 0, i32* %i, align 4
+  br label %for.cond
+
+for.cond:                                         ; preds = %for.inc, %if.end
+  %3 = load i32, i32* %i, align 4
+  %4 = load i32, i32* %len.addr, align 4
+  %sub = sub i32 %4, 1
+  %cmp = icmp ult i32 %3, %sub
+  br i1 %cmp, label %for.body, label %for.end
+
+for.body:                                         ; preds = %for.cond
+  %5 = load %struct.FILEDef*, %struct.FILEDef** %fp.addr, align 4
+  %p1 = getelementptr inbounds %struct.FILEDef, %struct.FILEDef* %5, i32 0, i32 0
+  %6 = load i8*, i8** %p1, align 4
+  %7 = load i8, i8* %6, align 1
+  %8 = load i8*, i8** %buf.addr, align 4
+  %9 = load i32, i32* %i, align 4
+  %arrayidx = getelementptr inbounds i8, i8* %8, i32 %9
+  store i8 %7, i8* %arrayidx, align 1
+  %tobool2 = icmp ne i8 %7, 0
+  br i1 %tobool2, label %if.end4, label %if.then3
+
+if.then3:                                         ; preds = %for.body
+  br label %for.end
+
+if.end4:                                          ; preds = %for.body
+  %10 = load %struct.FILEDef*, %struct.FILEDef** %fp.addr, align 4
+  %p5 = getelementptr inbounds %struct.FILEDef, %struct.FILEDef* %10, i32 0, i32 0
+  %11 = load i8*, i8** %p5, align 4
+  %incdec.ptr = getelementptr inbounds i8, i8* %11, i32 1
+  store i8* %incdec.ptr, i8** %p5, align 4
+  br label %for.inc
+
+for.inc:                                          ; preds = %if.end4
+  %12 = load i32, i32* %i, align 4
+  %inc = add nsw i32 %12, 1
+  store i32 %inc, i32* %i, align 4
+  br label %for.cond
+
+for.end:                                          ; preds = %if.then3, %for.cond
+  %13 = load i8*, i8** %buf.addr, align 4
+  %14 = load i32, i32* %i, align 4
+  %arrayidx6 = getelementptr inbounds i8, i8* %13, i32 %14
+  store i8 0, i8* %arrayidx6, align 1
+  %15 = load i8*, i8** %buf.addr, align 4
+  store i8* %15, i8** %retval, align 4
+  br label %return
+
+return:                                           ; preds = %for.end, %if.then
+  %16 = load i8*, i8** %retval, align 4
+  ret i8* %16
+}
+
+attributes #0 = { noinline nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="generic" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nounwind }
+attributes #2 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="generic" "unsafe-fp-math"="false" "use-soft-float"="false" }
+
+!llvm.ident = !{!0}
+
+!0 = !{!"clang version 5.0.0 (http://llvm.org/git/clang.git 01734df77696b4d9ba1debc1823b29673cae6a6c) (http://llvm.org/git/llvm.git c67ef6aaf75865024462576a5b790e46ccc2e75e)"}

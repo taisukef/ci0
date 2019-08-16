@@ -1,5 +1,6 @@
 // ci0.c  2013.10.03  Hatada  http://home.a00.itscom.net/hatada/lp/ci/minicinterpreter00.html
 //        2019.06.05   editted by @taisukef https://fukuno.jig.jp/2508
+//        2019.08.16   add WASM support by @taisukef https://fukuno.jig.jp/2581
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,26 +11,51 @@
 int fToken, fTrace, fCode;       // コマンド引数オプション
 char* Token[SIZETOKEN];                 // トークン配列
 int nToken;                            // トークン数
-int tix = -1;  //カレントトークン.構文解析で使用.エラー関数共用のためここに置く
+int tix;  //カレントトークン.構文解析で使用.エラー関数共用のためここに置く
 
-void error(const char *format, ...) {
-    fprintf(stderr, "%s", format); //    vfprintf(stderr, format, (char*)&format + sizeof(char*));
-    if (tix >= 0)
-        fprintf(stderr, "\n  Token[%d] = \"%s\"\n", tix, Token[tix]);
+int err = 0;
+#include <stdarg.h>
+int error(const char *fmt, ...) {
+    #ifndef WASM
+    va_list ap;
+	va_start(ap, fmt);
+	char* p = NULL;
+	vasprintf(&p, fmt, ap);
+	va_end(ap);
+	fprintf(stderr, "%s", p);
+	free(p);
+    
+    #else // for WASM
+	va_list ap;
+	va_start(ap, fmt);
+    char buf[1024];
+	char* p = buf;
+	vasprintf(&p, fmt, ap);
+	va_end(ap);
+	*p = '\0';
+    fprintf(stderr, "%s", buf);
+    #endif
+
+//    if (tix >= 0)
+//        fprintf(stderr, "\n  Token[%d] = \"%s\"\n", tix, Token[tix]);
     exit(1);
+    return err = 1;
 }
+
 // 移植性のために、一般には stdarg.h のマクロを使う方がよい。
 #define isalpha(c) ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
 #define isdigit(c) ((c >= '0' && c <= '9'))
 int isAlpha(int c) { return (isalpha(c) || c == '_'); }
 int isAlNum(int c) { return isAlpha(c) || isdigit(c); }
-int isKanji(int c) { return (c>=0x81 && c<=0x9F) || (c>=0xE0 && c<=0xFC); }
+int isKanji(int c) { return (c>=0x81 && c<=0x9F) || (c>=0xE0 && c<=0xFC); } // for SJIS?
 
-void lex(const char *srcfile) {
+int lex(const char* srcfile) { // 0:no error
+    tix = -1;
+    nToken = 0;
     char linebuf[256], buf[128], op2[4];
-    FILE *fpSrc = fopen(srcfile, "r");
+    FILE* fpSrc = fopen(srcfile, "r");
     if (fpSrc == NULL)
-        error("file '%s' can't open", srcfile);
+        return error("file '%s' can't open", srcfile);
     while (fgets(linebuf, sizeof(linebuf), fpSrc) != NULL) {
         for (char* p = linebuf; *p != '\0';) {       // 一行分の字句解析
             if (*p <= ' ') {
@@ -44,7 +70,7 @@ void lex(const char *srcfile) {
                     if (*p == '\\' || isKanji(*p))
                         p++;
                 if (*p++ != '"')
-                    error("後ろの引用符がありません<%s>", pBgn);
+                    return error("not found a double quote <%s>", pBgn); // 後ろの引用符がありません
             } else if (isdigit(*p)) {                   // 数値(10進)
                 for (p++; *p != '\0' && isdigit(*p); p++);
             } else if (strncmp(pBgn, "char*", 5) == 0) {  // char*
@@ -53,7 +79,11 @@ void lex(const char *srcfile) {
                 for (p++; *p != '\0' && isAlNum(*p);)
                     p++;
             } else {                                    // 演算子
-                sprintf(op2, "%c%c ", p[0], p[1]);
+                //sprintf(op2, "%c%c ", p[0], p[1]); // WASMで未対応
+                op2[0] = p[0];
+                op2[1] = p[1];
+                op2[2] = ' ';
+                op2[3] = '\0';
                 p += strstr(OPERATOR2, op2) != NULL ? 2 : 1;
             }
 //          sprintf(buf, "%.*s", p - pBgn, pBgn);
@@ -62,13 +92,14 @@ void lex(const char *srcfile) {
             }
             buf[p - pBgn] = 0;
             if (nToken == SIZETOKEN)
-                error("トークン配列オーバフロー");
+                return error("out of token memory"); // トークン配列オーバフロー
             Token[nToken++] = strdup(buf);
             if (fToken)
-                printf(strchr(";{}",*buf) != NULL ? "%s\n" : "%s ", buf);
+                printf(strchr(";{}", *buf) != NULL ? "%s\n" : "%s ", buf);
         }
     }
     fclose(fpSrc);
+    return 0;
 }
 //----------------------------------------------------------------------------//
 //                               名前管理                                     //
@@ -87,18 +118,18 @@ Name* GName[SIZEGLOBAL];
 Name* LName[SIZELOCAL];    // 名前管理表
 int nGlobal, nLocal;       // 同上現在の登録数
 // 関数または変数情報を名前管理表に登録する
-Name *appendName(int nB, int type, char *dataType, char *name, int addrType, intptr_t addr) {
+Name* appendName(int nB, int type, char* dataType, char* name, int addrType, intptr_t addr) {
     Name nm = { type, dataType, name, addrType, addr };
-    Name *pNew = calloc(1, sizeof(Name));
+    Name* pNew = calloc(1, sizeof(Name));
     if (pNew == NULL)
-        error("appendName: メモリが足りません");
+        error("appendName: out of memory"); // メモリが足りません
     memcpy(pNew, &nm, sizeof(Name)); 
-    if (nB == 0 && nGlobal < SIZEGLOBAL-1)
+    if (nB == 0 && nGlobal < SIZEGLOBAL - 1)
         GName[nGlobal++] = pNew;
-    else if (nB == 1 && nLocal < SIZELOCAL-1)
+    else if (nB == 1 && nLocal < SIZELOCAL - 1)
         LName[nLocal++] = pNew;
     else
-        error("appendName: 引数エラーまたは配列オーバーフロー");
+        error("appendName: parameter error or out of array range"); // 引数エラーまたは配列オーバーフロー
     return pNew;        // 新しいエントリのアドレスを返す
 }
 // 指定された名前表から指定された名前を探す
@@ -112,10 +143,10 @@ Name* getNameFromTable(int nB, int type, char *name, int fErr) {
     if (fErr && nB == 0)
         error("'%s' undeclared", name);
     return NULL;        // 見つからなかった。
-} 
+}
 // 最初にローカル名前表、なければグローバル名前表から指定された名前を探す
 Name* getNameFromAllTable(int type, char* name, int fErr) {
-    Name *pName = getNameFromTable(1, type, name, fErr);
+    Name* pName = getNameFromTable(1, type, name, fErr);
     if (pName != NULL)
         return pName;
     return getNameFromTable(0, type, name, fErr);
@@ -152,15 +183,24 @@ int isTypeSpecifier() { return is("void") || is("int") || is("char*"); }
 int isFunctionDefinition() { return *Token[tix+2] == '('; }
 void skip(char *s) { if (!ispp(s)) error("'%s' expected", s); }
 
-void printInst(int n, INSTRUCT *pI) {
-    printf("%4d: %s ", n, OPCODE[pI->opcode]);
+void printInst(int n, INSTRUCT* pI) {
+    printf("%4d: ", n);
+    printf("%s ", OPCODE[pI->opcode]);
     if (pI->type == NIL) {
-        printf("\n");
     } else if (pI->type == STR) {
-        printf("%s %s\n", TYPE[pI->type], (const char*)pI->val);
+        printf("%s ", TYPE[pI->type]);
+        printf("%s", (const char*)pI->val);
     } else {
-        printf("%s %ld\n", TYPE[pI->type], pI->val);
+#ifndef WASM
+        printf("%s ", TYPE[pI->type]);
+        printf("%ld", pI->val);
+#else
+        printf("%s ", TYPE[pI->type]);
+        printf("%d", pI->val);
+//        printf("%4d: %s %s %d\n", n, OPCODE[pI->opcode], TYPE[pI->type], pI->val);
+#endif
     }
+    printf("\n");
 }
 INSTRUCT* outInst2(int opcode, int type, intptr_t val) {
     INSTRUCT inst = { opcode, type, val };
@@ -259,7 +299,7 @@ void assign() {
     outInst(MOV);               // Mem[st1] = st0
 }
 void expression(int mode) {             // #15
-    if (strcmp(Token[tix+1], "=") == 0)
+    if (strcmp(Token[tix + 1], "=") == 0)
         assign();
     else
         equalityExpression(mode);
@@ -365,28 +405,38 @@ void functionDefinition() {
 }
 //============================ 最上位の構文解析 =============================
 /// Program ::= (FunctionDefinition | VariableDeclaration ";")*
-void program() {
+int program() { // 0: no error
+    err = 0;
+    nInst = 0;
+    entryPoint = -1;
+    numLabel = 1;
     for (tix = 0; tix < nToken;) {
-        if (fTrace) printf("%4d: %s\n", tix, Token[tix]);
+        //if (fTrace) printf("%4d: %s\n", tix, Token[tix]);
         if (isFunctionDefinition()) {
             functionDefinition(); // 関数定義
         } else {
             variableDeclaration(ST_GVAR); // 外部変数宣言
             skip(";");
         }
+        if (err)
+            return err;
     }
+    if (entryPoint < 0)
+        return error("not found main function");
+    return 0;
 }
-void parser() { 
-    appendName(0, NM_FUNC, "void", "println", AD_CODE, 0);
+int parser() { 
+    nGlobal = nLocal = 0;
+    appendName(0, NM_FUNC, "void", "putstr", AD_CODE, 0);
     appendName(0, NM_FUNC, "void", "putnum", AD_CODE, 0);
-    program();
+    return program();
 }
 //-----------------------------------------------------------------------------//
 //                       命令実行                                              //
 #define MAXMEM 1000
 intptr_t mem[MAXMEM];       // メモリ
 intptr_t sp, bp, pc;        // スタックポインタ、ベースポインタ、プログラムカウンタ
-intptr_t pos = 0;           // メモリインデックス. データは上から、スタックは下から
+intptr_t pos;               // メモリインデックス. データは上から、スタックは下から
 intptr_t location[1000];    // ラベルのアドレス配列
 void push(intptr_t val) { 
     if (sp <= pos)
@@ -405,8 +455,9 @@ intptr_t getStr(char *str) {
     return (intptr_t)str + 1;
 }
 int execute(int param) {
+    pos = 0;
+    tix = -1;           // エラー表示で Token[tix] の表示をやめるため
     intptr_t addr, rtn;
-    if (fTrace) printf("entryPoint = %d\n", entryPoint);
     for (int n = 0; n < nInst; n++) {
         if (fCode) printInst(n, &Inst[n]);
         if (Inst[n].opcode == LABEL)
@@ -414,11 +465,13 @@ int execute(int param) {
     }
     for (int n = 0; n < ixData; n++) 
         mem[pos++] = atoi(DataSection[n]);
+    
+    if (fTrace) printf("entryPoint = %d\n", entryPoint);
     sp = MAXMEM;  // スタックポインタの初期化
     pc = entryPoint;
     push(param);
     push(-1);
-    for (; pc < nInst; ) {
+    while (pc < nInst) {
       if (fTrace) printInst(pc, &Inst[pc]);
       int type = Inst[pc].type;
       intptr_t val  = Inst[pc].val;
@@ -463,10 +516,14 @@ int execute(int param) {
         case CALL:
             if (type == STR) {  // native function call
                 const char* fn = (const char*)val;
-                if (strcmp("println", fn) == 0) {
+                if (strcmp("putstr", fn) == 0) {
                     rtn = printf("%s\n", (const char*)mem[sp]);
                 } else if (strcmp("putnum", fn) == 0) {
+#ifndef WASM
                     rtn = printf("%ld\n", mem[sp]);
+#else
+                    rtn = printf("%d\n", mem[sp]);
+#endif
                 }
                 push(rtn);
             } else {
@@ -489,7 +546,7 @@ int execute(int param) {
     }
     return 1;
 }
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
     char* srcfile = NULL;
     int param = 0;
     for (int n = 1; n < argc; n++) {
@@ -505,7 +562,6 @@ int main(int argc, char** argv) {
     }
     lex(srcfile);       //==== 字句解析. 結果はToken配列に格納 ====//
     parser();           //==== 構文解析・意味解析・中間語コード生成 ====//
-    tix = -1;           // エラー表示で Token[tix] の表示をやめるため
     if (fTrace) printf("************** execute *****************\n");
     return execute(param);
 }
