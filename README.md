@@ -35,3 +35,14 @@ ci0 -code test/test1-calc.c
 ci0 -trace test/test2-while.c  
 ci0 test/test3-function.c  
 ci0 test/test4-recursive.c 20  
+
+# thanks
+
+ミニCインタプリタ  
+http://home.a00.itscom.net/hatada/lp/ci/minicinterpreter00.html  
+
+Linuxをはじめよう！:printfを自作してみる  
+http://blog.livedoor.jp/hiroumauma/archives/1676244.html  
+
+Ace - The High Performance Code Editor for the Web  
+https://ace.c9.io  
