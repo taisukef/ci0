@@ -8,4 +8,4 @@ clang -emit-llvm --target=wasm32 -S -Iwasm wasm/myvprintf.c -o obj/myvprintf.o
 llvm-link -o obj/ci0.bc obj/ci0.o obj/string.o obj/stdio.o obj/stdlib.o obj/wasm-main.o obj/myvprintf.o
 llc obj/ci0.bc -march=wasm32
 s2wasm --allocate-stack 10000 obj/ci0.s > obj/ci0.wat
-wast2wasm obj/ci0.wat -o ci0.wasm
+wat2wasm obj/ci0.wat -o ci0.wasm
