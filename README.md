@@ -27,7 +27,7 @@ gcc ci0.c -o ci0
 for Windows  
 cl ci0.c
 
-for WebAssembly (Mac)
+for WebAssembly (Mac)  
 sh c-wasm.sh  
 open localhost or your site  
 
