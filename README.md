@@ -21,11 +21,11 @@ http://fukuno.jig.jp/2581
 
 # build
 
-for Mac  
-gcc cl0.c -o cl0  
+for Mac & Ubuntu
+gcc ci0.c -o ci0
 
 for Windows  
-cl cl0.c  
+cl ci0.c
 
 for WebAssembly (Mac)
 sh c-wasm.sh  
