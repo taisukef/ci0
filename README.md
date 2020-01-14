@@ -21,7 +21,7 @@ http://fukuno.jig.jp/2581
 
 # build
 
-for Mac & Ubuntu
+for Mac & Ubuntu  
 gcc ci0.c -o ci0
 
 for Windows  
