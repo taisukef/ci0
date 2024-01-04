@@ -52,6 +52,17 @@ char* fgets(char* buf, unsigned int len, FILE* fp) {
 	return buf;
 }
 
+int putchar(int c) {
+	return 0;
+}
+int puts(const char* s) {
+	return 0;
+}
+size_t fwrite(const void* p, size_t size, size_t nmemb, FILE* fp) {
+	return 0;
+}
+
+
 FILE fstderr;
 FILE fstdout;
 FILE fstdin;

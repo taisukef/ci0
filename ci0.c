@@ -185,21 +185,16 @@ int isFunctionDefinition() { return *Token[tix+2] == '('; }
 void skip(char *s) { if (!ispp(s)) error("'%s' expected", s); }
 
 void printInst(int n, INSTRUCT* pI) {
-    printf("%4d: ", n);
+    printf("%d: ", n);
     printf("%s ", OPCODE[pI->opcode]);
     if (pI->type == NIL) {
     } else if (pI->type == STR) {
         printf("%s ", TYPE[pI->type]);
         printf("%s", (const char*)pI->val);
     } else {
-#ifndef WASM
         printf("%s ", TYPE[pI->type]);
         printf("%ld", pI->val);
-#else
-        printf("%s ", TYPE[pI->type]);
-        printf("%d", pI->val);
 //        printf("%4d: %s %s %d\n", n, OPCODE[pI->opcode], TYPE[pI->type], pI->val);
-#endif
     }
     printf("\n");
 }
@@ -520,11 +515,7 @@ int execute(int param) {
                 if (strcmp("putstr", fn) == 0) {
                     rtn = printf("%s\n", (const char*)mem[sp]);
                 } else if (strcmp("putnum", fn) == 0) {
-#ifndef WASM
                     rtn = printf("%ld\n", mem[sp]);
-#else
-                    rtn = printf("%d\n", mem[sp]);
-#endif
                 }
                 push(rtn);
             } else {

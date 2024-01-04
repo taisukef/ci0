@@ -1,14 +1,9 @@
 #include <stdlib.h>
 
-/*
-void exit(int n) {
-}
-*/
-
 char heap[100 * 1024];
 int useheap = 0;
 
-void* calloc(unsigned int n, unsigned int cnt) {
+void* calloc(unsigned long n, unsigned long cnt) {
 	n *= cnt;
 	void* p = heap + useheap;
 	useheap += n;
@@ -34,4 +29,11 @@ int atoi(const char* s) {
 		n = n * 10 + (c - '0');
 	}
 	return flg ? -n : n;
+}
+
+void* memset(void* p, int len, unsigned long n) {
+  for (int i = 0; i < len; i++) {
+    ((char*)p)[i] = (char)n;
+  }
+  return p;
 }

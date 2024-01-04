@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-unsigned int strlen(const char* s) {
+unsigned long strlen(const char* s) {
 	unsigned int n = 0;
 	while (*s++)
 		n++;
@@ -19,7 +19,7 @@ int strcmp(const char* buf1, const char* buf2) {
 			return 0;
 	}
 }
-int strncmp(const char* buf1, const char* buf2, unsigned int len) {
+int strncmp(const char* buf1, const char* buf2, unsigned long len) {
 	for (int i = 0; i < len; i++) {
 		int n = *buf1++;
 		int c = n - *buf2++;
@@ -63,7 +63,7 @@ char* strstr(const char* s1, const char* s2) {
 	}
 	return NULL;
 }
-void* memcpy(void* dst, const void* src, unsigned int len) {
+void* memcpy(void* dst, const void* src, unsigned long len) {
 	void* bk = dst;
 	for (int i = 0; i < len; i++)
 		*(char*)dst++ = *(const char*)src++;
@@ -86,4 +86,15 @@ int sprintf(char* dst, const char* fmt, ...) {
 	va_end(ap);
 	*dst = '\0';
 	return 0;
+}
+
+void* memchr(const void* s, int c, unsigned long n) {
+	unsigned char* us = (unsigned char*)s;
+	for (unsigned long i = 0; i < n;) {
+		if (us[i] == (unsigned char)c) {
+			return us + i;
+    }
+		i++;
+	}
+	return NULL;
 }

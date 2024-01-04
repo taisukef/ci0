@@ -1,2 +1,2 @@
-void console_log(const char* s);
-void exit(int n);
+__attribute__((import_module("env"), import_name("console_log"))) 
+extern void console_log(const char* s);

@@ -8,7 +8,7 @@
 <meta name="format-detection" content="telephone=no">
 
 <script src="lib/ace.js"></script>
-<script>"use strict"
+<script type="module">
 
 const samplesrc = 
 `int fib(int n) {
@@ -27,148 +27,142 @@ int main(int param) {
   return fib(param);
 }`
 
-window.onload = function() {
-	const editor = ace.edit("editor")
-    editor.setTheme("ace/theme/tomorrow_night_bright");
-    editor.setFontSize(13);
-    editor.getSession().setMode("ace/mode/c_cpp");
-    editor.getSession().setUseWrapMode(true);
-	editor.getSession().setTabSize(2);
-	editor.commands.addCommand({
-	  name: "RUN", bindKey: { win : "F5", mac : "F5" }, exec: function(editor) { run() }
-	})
-	editor.getSession().on("change", function() {
-		localStorage.setItem('text', editor.getValue())
-	})
-	const v = localStorage.getItem("text")
-	if (v)
-		editor.setValue(v, -1)
-	else
-		editor.setValue(samplesrc, -1)
-	editor.focus()
-	/*
-	editor.commands.addCommand({
-	  name: "SAVE", bindKey: { win : "Ctrl-S", mac : "Command-S" }, exec: function(editor) { run() }
-	})
-	*/
-	const output = ace.edit("output")
-	output.setReadOnly(true)
-	/*
-	output.setOptions({
-	    maxLines: 10,
-	    autoScrollEditorIntoView: true,
-	    showPrintMargin: false
-	})
-	*/
-	const consoleout = function(s) {
-		const doc = output.getSession().getDocument()
-		const len = doc.getLength()
-		output.setValue(output.getValue() + s)
-//		doc.insert(len, s)
-		
-		output.gotoLine(len, 0, true)
+const editor = ace.edit("editor")
+editor.setTheme("ace/theme/tomorrow_night_bright");
+editor.setFontSize(13);
+editor.getSession().setMode("ace/mode/c_cpp");
+editor.getSession().setUseWrapMode(true);
+editor.getSession().setTabSize(2);
+editor.commands.addCommand({
+	name: "RUN", bindKey: { win : "F5", mac : "F5" }, exec: function(editor) { run() }
+})
+editor.getSession().on("change", function() {
+	localStorage.setItem('text', editor.getValue())
+})
+const v = localStorage.getItem("text")
+if (v)
+	editor.setValue(v, -1)
+else
+	editor.setValue(samplesrc, -1)
+editor.focus()
+/*
+editor.commands.addCommand({
+	name: "SAVE", bindKey: { win : "Ctrl-S", mac : "Command-S" }, exec: function(editor) { run() }
+})
+*/
+const output = ace.edit("output")
+output.setReadOnly(true)
+/*
+output.setOptions({
+		maxLines: 10,
+		autoScrollEditorIntoView: true,
+		showPrintMargin: false
+})
+*/
+const consoleout = function(s) {
+	const doc = output.getSession().getDocument()
+	output.setValue(output.getValue() + s)
+	if (s.indexOf("\n") >= 0) {
+		console.log(s, s.length)
 	}
-	let ex
-	let mem
-	let idxsrc
-	let importObject = {
-			  env: {
-			      console_log: function(p) {
-					  	let s = ""
-						for (;;) {
-							const c = mem[p]
-							if (c == 0)
-								break;
-							s += String.fromCharCode(c)
-							p++
-						}
-						console.log(s)
-						consoleout(s)
-				  },
-				  exit: function(n) {
-					  console.log("exit: " + n)
-					  throw n
-				  }
-			  }
-			}
+//    doc.insert(len, s)
 	
-	const run = function() {
-		output.setValue("")
-
-		ex.cfreeall()
-		const f = function(b) {
-			return b ? 1 : 0
-		}
-		ex.setFlagTokenCodeTrace(f(flgtoken.checked), f(flgcode.checked), f(flgtrace.checked))
-		const src = editor.getValue()
-		for (let i = 0; i < src.length; i++) {
-			mem[idxsrc + i] = src.charCodeAt(i)
-		}
-		mem[idxsrc + src.length] = 0
-
-		if (ex.lex("dummy.c"))
-			return
-		if (ex.parser())
-			return
-		let p = parseInt(param.value)
-		if (!p)
-			p = 0
-		const res = ex.execute(p)
-		//alert(res)
-		consoleout("return value: " + res)
-
-	}
-
-	fetch('ci0.wasm')
-		.then(response => response.arrayBuffer())
-		.then(buffer => new Uint8Array(buffer))
-		.then(bytes => WebAssembly.instantiate(bytes, importObject))
-		.then(result => {
-			ex = result.instance.exports
-			mem = new Uint8Array(ex.memory.buffer)
-			idxsrc = ex.getIndexOfSource()
-//			console.log("exec: " + ex.test())
-
-			btn.onclick = run
-			btncls.onclick = function() {
-				output.setValue("")
+	const len = doc.getLength()
+	output.gotoLine(len, 0, true)
+}
+let ex
+let mem
+let idxsrc
+let importObject = {
+	env: {
+		console_log: function(p) {
+			let s = ""
+			for (;;) {
+				const c = mem[p]
+				if (c == 0)
+					break;
+				s += String.fromCharCode(c)
+				p++
 			}
-		})
+			consoleout(s)
+		},
+		exit: function(n) {
+			console.log("exit: " + n)
+			throw n
+		}
+	}
+}
+
+const run = function() {
+	output.setValue("")
+
+	ex.cfreeall()
+	const f = function(b) {
+		return b ? 1 : 0
+	}
+	ex.setFlagTokenCodeTrace(f(flgtoken.checked), f(flgcode.checked), f(flgtrace.checked))
+	const src = editor.getValue()
+	for (let i = 0; i < src.length; i++) {
+		mem[idxsrc + i] = src.charCodeAt(i)
+	}
+	mem[idxsrc + src.length] = 0
+
+	if (ex.lex("dummy.c"))
+		return
+	if (ex.parser())
+		return
+	let p = parseInt(param.value)
+	if (!p)
+		p = 0
+	const res = ex.execute(p)
+	//alert(res)
+	consoleout("return value: " + res)
+}
+
+const bin = await (await fetch("./ci0.wasm")).arrayBuffer();
+const wasm = await WebAssembly.instantiate(bin, importObject);
+ex = wasm.instance.exports;
+mem = new Uint8Array(ex.memory.buffer)
+idxsrc = ex.getIndexOfSource()
+
+btn.onclick = run
+btncls.onclick = function() {
+	output.setValue("")
 };
 
 </script>
 <style>
 body {
-	margin: 0;
-	font-family: sans-serif;
+  margin: 0;
+  font-family: sans-serif;
 }
 a {
-	color: gray !important;
+  color: gray !important;
 }
 #editor {
-	width: 100%;
-	height: 50vh;
+  width: 100%;
+  height: 50vh;
 }
 #output {
-	width: 100%;
-	height: 30vh;
+  width: 100%;
+  height: 30vh;
 }
 #param {
-	margin-left: .5vw;
+  margin-left: .5vw;
 }
 h1 {
-	padding: .6vh;
-	margin: 0;
-	font-size: 3vw;
+  padding: .6vh;
+  margin: 0;
+  font-size: 3vw;
 }
 button {
-	margin: 3px;
-	padding: 4px;
-	font-size: 1.5vh;
+  margin: 3px;
+  padding: 4px;
+  font-size: 1.5vh;
 }
 #credit {
-	padding: .3vh;
-	font-size: 1.5vw;
+  padding: .3vh;
+  font-size: 1.5vw;
 }
 </style>
 </head>
