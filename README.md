@@ -6,8 +6,7 @@ C compiler in 512 lines.
 I editted "Mini C Interpreter" by Mr. Minoru Hatada for Mac or WebAssembly.  
 Minoru Hatada 氏の「ミニCインタプリタ」をMacやWebAssemblyで動くように修正  
 
-http://home.a00.itscom.net/hatada/lp/ci/minicinterpreter00.html  
-http://home.a00.itscom.net/hatada/_toc/index.html  
+http://shopping2.gmobb.jp/htdmnr/www08/lp2016/chap15/mc15.html  
 
 Works on WebAssembly  
 WebAssemblyで動きます  
@@ -42,7 +41,7 @@ ci0 test/test4-recursive.c 20
 # thanks
 
 ミニCインタプリタ  
-http://home.a00.itscom.net/hatada/lp/ci/minicinterpreter00.html  
+http://shopping2.gmobb.jp/htdmnr/www08/lp2016/chap15/mc15.html  
 
 Linuxをはじめよう！:printfを自作してみる  
 http://blog.livedoor.jp/hiroumauma/archives/1676244.html  
