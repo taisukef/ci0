@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
 <meta name="format-detection" content="telephone=no">
 
-<script src="lib/ace.js"></script>
 <script type="module">
+import { monaco } from "https://code4fukui.github.io/monaco-editor/monaco.js";
 
 const samplesrc = 
 `int fib(int n) {
@@ -27,18 +27,23 @@ int main(int param) {
   return fib(param);
 }`
 
-const editor = ace.edit("editor")
+const editor = monaco.editor.create(diveditor, {
+/*
 editor.setTheme("ace/theme/tomorrow_night_bright");
 editor.setFontSize(13);
 editor.getSession().setMode("ace/mode/c_cpp");
 editor.getSession().setUseWrapMode(true);
 editor.getSession().setTabSize(2);
+*/
+});
+/*
 editor.commands.addCommand({
 	name: "RUN", bindKey: { win : "F5", mac : "F5" }, exec: function(editor) { run() }
 })
-editor.getSession().on("change", function() {
+*/
+editor.onchange = function() {
 	localStorage.setItem('text', editor.getValue())
-})
+};
 const v = localStorage.getItem("text")
 if (v)
 	editor.setValue(v, -1)
@@ -50,8 +55,8 @@ editor.commands.addCommand({
 	name: "SAVE", bindKey: { win : "Ctrl-S", mac : "Command-S" }, exec: function(editor) { run() }
 })
 */
-const output = ace.edit("output")
-output.setReadOnly(true)
+const output = monaco.editor.create(divoutput);
+//output.setReadOnly(true)
 /*
 output.setOptions({
 		maxLines: 10,
@@ -60,15 +65,8 @@ output.setOptions({
 })
 */
 const consoleout = function(s) {
-	const doc = output.getSession().getDocument()
-	output.setValue(output.getValue() + s)
-	if (s.indexOf("\n") >= 0) {
-		console.log(s, s.length)
-	}
-//    doc.insert(len, s)
-	
-	const len = doc.getLength()
-	output.gotoLine(len, 0, true)
+	output.setValue(output.getValue() + s);
+	output.revealLine(output.getModel().getLineCount())
 }
 let ex
 let mem
@@ -127,7 +125,7 @@ idxsrc = ex.getIndexOfSource()
 
 btn.onclick = run
 btncls.onclick = function() {
-	output.setValue("")
+	output.setValue("");
 };
 
 </script>
@@ -139,11 +137,11 @@ body {
 a {
   color: gray !important;
 }
-#editor {
+#diveditor {
   width: 100%;
   height: 50vh;
 }
-#output {
+#divoutput {
   width: 100%;
   height: 30vh;
 }
@@ -168,14 +166,14 @@ button {
 </head>
 <body>
 <h1>webci0 - mini C compiler ci0 in WebAssembly</h1>
-<div id=editor></div>
+<div id=diveditor></div>
 <input type=text id=param placeholder="Param (default:0)">
 <button id=btn>COMPILE &amp; RUN</button>
 <button id=btncls>CLS</button>
 <label><input type=checkbox id=flgtoken>TOKEN</label>
 <label><input type=checkbox id=flgcode>CODE</label>
 <label><input type=checkbox id=flgtrace>TRACE</label>
-<div id=output></div>
+<div id=divoutput></div>
 
 <div id="credit">
 API: <a href=http://home.a00.itscom.net/hatada/lp/ci/minicinterpreter00.html>ミニCインタプリタ</a>, <a href=https://webassembly.org/>WebAssembly / wasm</a>, <a href=https://ace.c9.io>Ace - code editor</a><br>
